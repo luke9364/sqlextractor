@@ -3,6 +3,7 @@ package cn.sqlextract;
 
 import cn.sqlextract.env.CustomCommandLinePropertySource;
 import cn.sqlextract.parser.CCJSqlExtractorManage;
+import cn.sqlextract.parser.DateExtractor;
 import cn.sqlextract.parser.RegexpSqlExtractorManage;
 import cn.sqlextract.parser.SqlExtractorSubject;
 import cn.sqlextract.util.SqlExtractorUtil;
@@ -14,6 +15,7 @@ import net.sf.jsqlparser.statement.update.Update;
 import org.springframework.util.CollectionUtils;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,9 +36,11 @@ public class App
         CustomCommandLinePropertySource source = new CustomCommandLinePropertySource(args);
         String dir = source.getArgValue("dir");
         String targetDir = source.getArgValue("targetDir");
+        String minDate = source.getArgValue("minDate");
         System.out.println("-------------------start----------------------");
         System.out.println("======>解析SQL文件目录："+dir);
         System.out.println("======>SQL语句结果目录："+targetDir);
+        System.out.println("======>文件名称的最小日期："+minDate);
 
         List<Path> pathList = SqlFileUtil.findSqlFiles(dir);
         if (CollectionUtils.isEmpty(pathList)){
@@ -55,7 +59,17 @@ public class App
         patternList.add(SqlExtractorUtil.UPDATE_PATTERN);
         patternList.add(SqlExtractorUtil.DELETE_PATTERN);
 
-        SqlExtractorSubject sqlExtractorSubject = new SqlExtractorSubject(new CCJSqlExtractorManage(stmtClassList),
+        FilenameFilter filenameFilter = null;
+        if (minDate != null){
+            DateExtractor dateExtractor = new DateExtractor(DateExtractor.yyyyMMdd1);
+            filenameFilter = (file, filename) -> {
+                String extract = dateExtractor.extract(filename);
+                return extract != null && extract.compareTo(minDate) >= 0;
+            };
+        }
+
+        SqlExtractorSubject sqlExtractorSubject = new SqlExtractorSubject(filenameFilter,
+                new CCJSqlExtractorManage(stmtClassList),
                 new RegexpSqlExtractorManage(patternList, stmtClassList));
 
         List<String> okList = new ArrayList<>();
