@@ -7,7 +7,7 @@
 mvn clean package -DskipTest=true
 # 进入编译结果目录
 # 运行项目
-java -jar custom-sqlextractor-1.0-SNAPSHOT-jar-with-dependencies.jar --dir=解析SQL文件目录 --targetDir=SQL语句结果目录 [--minDate=SQL文件的最小日期,格式:yyyy.MM.dd]
+java -jar custom-sqlextractor-1.0-SNAPSHOT-jar-with-dependencies.jar --dir=解析SQL文件目录 --targetDir=SQL语句结果目录 [--minDate=SQL文件的最小日期,格式:yyyy.MM.dd] --execType=extract|filter|merge[抽取SQL或过滤SQL或合并SQL语句]
 
 ```
 
