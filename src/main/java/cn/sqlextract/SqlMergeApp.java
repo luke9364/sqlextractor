@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.List;
 
 public class SqlMergeApp {
@@ -39,6 +38,12 @@ public class SqlMergeApp {
             System.out.println("-------------------end----------------------");
             return;
         }
+
+        pathList.sort((t1, t2) -> {
+            String fileName1 = t1.toFile().getName();
+            String fileName2 = t2.toFile().getName();
+            return fileName1.compareTo(fileName2);
+        });
 
         String minFileName = StringUtils.isEmpty(minDate) ? null : "V"+minDate+".00000.1.sql";
 

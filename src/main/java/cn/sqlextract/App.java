@@ -21,5 +21,8 @@ public class App
         else if ("merge".equals(execType)){
             SqlMergeApp.getInstance().execute(source);
         }
+        else if ("check".equals(execType)){
+            SqlCheckApp.getInstance().execute(source);
+        }
     }
 }
