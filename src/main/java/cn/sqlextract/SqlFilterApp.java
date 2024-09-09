@@ -49,7 +49,9 @@ public class SqlFilterApp {
                         || sql.toLowerCase().contains("add constraint")
                         || sql.toLowerCase().contains("drop constraint")
                         || sql.toLowerCase().contains("set not null")
-                        || sql.toLowerCase().contains("drop not null") ){
+                        || sql.toLowerCase().contains("drop not null")
+                        || (sql.toLowerCase().startsWith("alter table") && sql.toLowerCase().contains("alter column"))
+                ){
                     failList.add(sql);
                 }
                 else {

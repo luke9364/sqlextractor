@@ -13,14 +13,16 @@ import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.update.Update;
 import org.springframework.util.CollectionUtils;
 
-import java.io.File;
+import java.io.BufferedWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -51,6 +53,7 @@ public final class SqlExtractApp {
             System.out.println("-------------------end----------------------");
             return;
         }
+        pathList.sort(Comparator.comparing(t -> t.toFile().getName()));
 
         List<Class<? extends Statement>> stmtClassList = new ArrayList<>();
         stmtClassList.add(Insert.class);
@@ -75,25 +78,59 @@ public final class SqlExtractApp {
                 new CCJSqlExtractorManage(stmtClassList),
                 new RegexpSqlExtractorManage(patternList, stmtClassList));
 
-        List<String> okList = new ArrayList<>();
-        List<String> failList = new ArrayList<>();
+
+        int okCount = 0;
+        int failCount = 0;
+        BufferedWriter okWriter = Files.newBufferedWriter(Paths.get(targetDir, "extract_ok.sql"), StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+        BufferedWriter failWriter = Files.newBufferedWriter(Paths.get(targetDir, "extract_fail.sql"), StandardCharsets.UTF_8, StandardOpenOption.CREATE);
 
         for (Path path : pathList) {
-            System.out.println(path);
+            String fileName = path.toFile().getName();
+            String mark = "------------------------------- 来自“"+fileName+"”文件的SQL语句 开始位置 -------------------------------------------";
+            List<String> okList = new ArrayList<>();
+            List<String> failList = new ArrayList<>();
             sqlExtractorSubject.extract(path, okList, failList);
+            if (!CollectionUtils.isEmpty(okList)){
+                //okCount += okList.size();
+                okWriter.write(mark);
+                okWriter.newLine();
+                for (String sql : okList) {
+                    if (sql.toLowerCase().contains("delete from ")){
+                        failList.add(sql);
+                        continue;
+                    }
+                    okCount ++;
+                    okWriter.write(sql);
+                    okWriter.newLine();
+                }
+                okWriter.write("------------------------------- 来自“"+fileName+"”文件的SQL语句 结束位置 -------------------------------------------");
+                okWriter.newLine();
+                okWriter.newLine();
+                okWriter.newLine();
+                okWriter.flush();
+            }
+            if (!CollectionUtils.isEmpty(failList)){
+                failCount += failList.size();
+                failWriter.write(mark);
+                failWriter.newLine();
+                for (String sql : failList) {
+                    failWriter.write(sql);
+                    failWriter.newLine();
+                }
+                failWriter.write("------------------------------- 来自“"+fileName+"”文件的SQL语句 结束位置 -------------------------------------------");
+                failWriter.newLine();
+                failWriter.newLine();
+                failWriter.newLine();
+                failWriter.flush();
+            }
         }
+        okWriter.close();
+        failWriter.close();
 
-        Path targetPath = Paths.get(targetDir);
-        File file;
-        if (!(file = targetPath.toFile()).exists() && file.mkdirs()){
-            System.out.println("======>新建目录：" + file);
-        }
-
-        Files.write(Paths.get(targetDir, "ok.sql"), okList, StandardCharsets.UTF_8);
-        Files.write(Paths.get(targetDir, "fail.sql"), failList, StandardCharsets.UTF_8);
-        System.out.println("======>输出正常的SQL语句：" + okList.size());
-        System.out.println("======>输出错误的SQL语句：" + failList.size());
+        System.out.println("======>输出正常的SQL语句：" + okCount);
+        System.out.println("======>输出错误的SQL语句：" + failCount);
         System.out.println("-------------------end----------------------");
+        System.exit(0);
     }
 
     private static class SqlExtractAppManage {
